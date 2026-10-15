@@ -33,10 +33,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import shap
+
 # ── 1. Load Model and Artifacts ──────────────────────────────
 MODEL_BUNDLE = None
 MODEL = None
 FEAT_NAMES = []
+EXPLAINER = None
 SHAP_IMP = {}
 FEAT_STATS = {}
 META = {}
@@ -45,7 +48,7 @@ HARMONIZATION = []
 METRICS_DATA = []
 
 def load_system():
-    global MODEL_BUNDLE, MODEL, FEAT_NAMES, SHAP_IMP, FEAT_STATS, META, BENCHMARKS, HARMONIZATION, METRICS_DATA
+    global MODEL_BUNDLE, MODEL, FEAT_NAMES, EXPLAINER, SHAP_IMP, FEAT_STATS, META, BENCHMARKS, HARMONIZATION, METRICS_DATA
     try:
         model_path = os.path.join(ART, 'best_model.pkl')
         if os.path.exists(model_path):
@@ -54,6 +57,14 @@ def load_system():
             MODEL = MODEL_BUNDLE['model']
             FEAT_NAMES = MODEL_BUNDLE['feature_names']
             print(f"[OK] Best model loaded with {len(FEAT_NAMES)} features.")
+            
+            # Initialize real-time TreeExplainer for per-prediction attribution
+            try:
+                EXPLAINER = shap.TreeExplainer(MODEL)
+                print("[OK] Real-time TreeExplainer initialized successfully.")
+            except Exception as e:
+                print(f"[WARN] TreeExplainer initialization failed: {e}")
+                EXPLAINER = None
 
         shap_path = os.path.join(ART, 'shap_importance.json')
         if os.path.exists(shap_path):

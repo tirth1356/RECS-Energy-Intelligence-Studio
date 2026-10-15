@@ -193,7 +193,7 @@ function setBarWidth(barId, valId, value, maxVal, text) {
 
 // ── 3. What-If Interactive Simulator ──────────────────────────
 function initWhatIfSimulator() {
-    const sliders = ['sim_fridge', 'sim_led_pct', 'sim_occupants'];
+    const sliders = ['sim_fridge', 'sim_led_pct', 'sim_occupants', 'sim_thermostat'];
     sliders.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -204,7 +204,7 @@ function initWhatIfSimulator() {
         }
     });
 
-    const toggles = ['sim_freezer', 'sim_dryer', 'sim_ac'];
+    const toggles = ['sim_freezer', 'sim_dryer', 'sim_ac', 'sim_washer', 'sim_heat_electric'];
     toggles.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -220,6 +220,15 @@ function updateSliderBadge(id) {
 
     if (id === 'sim_led_pct') {
         badge.textContent = el.value + '%';
+    } else if (id === 'sim_thermostat') {
+        const val = parseInt(el.value);
+        if (val > 0) {
+            badge.textContent = `+${val}% (High AC)`;
+        } else if (val < 0) {
+            badge.textContent = `${val}% (Eco Mode)`;
+        } else {
+            badge.textContent = `0% (Standard)`;
+        }
     } else {
         badge.textContent = el.value;
     }
@@ -229,6 +238,7 @@ function syncWithSimulator(payload) {
     const fridgeSlider = document.getElementById('sim_fridge');
     const occSlider = document.getElementById('sim_occupants');
     const ledSlider = document.getElementById('sim_led_pct');
+    const thermSlider = document.getElementById('sim_thermostat');
 
     if (fridgeSlider) {
         fridgeSlider.value = payload.num_fridge;
@@ -243,6 +253,10 @@ function syncWithSimulator(payload) {
         ledSlider.value = ledPct;
         updateSliderBadge('sim_led_pct');
     }
+    if (thermSlider) {
+        thermSlider.value = 0;
+        updateSliderBadge('sim_thermostat');
+    }
 
     const freezTog = document.getElementById('sim_freezer');
     if (freezTog) freezTog.checked = payload.has_freezer === 1;
@@ -252,6 +266,12 @@ function syncWithSimulator(payload) {
 
     const acTog = document.getElementById('sim_ac');
     if (acTog) acTog.checked = payload.has_ac === 1;
+
+    const washTog = document.getElementById('sim_washer');
+    if (washTog) washTog.checked = payload.has_washer === 1;
+
+    const heatTog = document.getElementById('sim_heat_electric');
+    if (heatTog) heatTog.checked = payload.heat_fuel === 1;
 
     triggerWhatIf();
 }
@@ -270,13 +290,25 @@ async function triggerWhatIf() {
     const simFridge = parseFloat(document.getElementById('sim_fridge').value) || 1;
     const simOcc = parseFloat(document.getElementById('sim_occupants').value) || 2;
     const simLedPct = parseFloat(document.getElementById('sim_led_pct').value) || 50;
-    const simFreezer = document.getElementById('sim_freezer').checked ? 1 : 0;
-    const simDryer = document.getElementById('sim_dryer').checked ? 1 : 0;
-    const simAc = document.getElementById('sim_ac').checked ? 1 : 0;
+    const simThermostatPct = parseFloat(document.getElementById('sim_thermostat')?.value || 0);
+
+    const simFreezer = document.getElementById('sim_freezer')?.checked ? 1 : 0;
+    const simDryer = document.getElementById('sim_dryer')?.checked ? 1 : 0;
+    const simAc = document.getElementById('sim_ac')?.checked ? 1 : 0;
+    const simWasher = document.getElementById('sim_washer')?.checked ? 1 : 0;
+    const simHeatElectric = document.getElementById('sim_heat_electric')?.checked ? 1 : 0;
 
     const totalLights = basePayload.num_lights || 20;
     const simLed = Math.round((simLedPct / 100) * totalLights);
     const simCfl = Math.max(0, totalLights - simLed);
+
+    // Adjust CDD (cooling degree days) based on thermostat & AC switch
+    let adjustedCdd = basePayload.cdd65;
+    if (simAc === 0) {
+        adjustedCdd = 0;
+    } else {
+        adjustedCdd = Math.max(0, basePayload.cdd65 * (1 + simThermostatPct / 100));
+    }
 
     const payload = {
         ...basePayload,
@@ -286,7 +318,10 @@ async function triggerWhatIf() {
         num_cfl: simCfl,
         has_freezer: simFreezer,
         has_dryer: simDryer,
-        has_ac: simAc
+        has_washer: simWasher,
+        has_ac: simAc,
+        cdd65: adjustedCdd,
+        heat_fuel: simHeatElectric
     };
 
     try {
