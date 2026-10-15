@@ -1,0 +1,42 @@
+{
+  "features": [
+    "rooms",
+    "bedrooms",
+    "sqft",
+    "occupants",
+    "num_fridge",
+    "has_washer",
+    "has_dryer",
+    "has_freezer",
+    "has_ac",
+    "num_lights",
+    "num_cfl",
+    "num_led",
+    "led_ratio",
+    "heat_equip",
+    "heat_fuel",
+    "ac_type",
+    "housing_type",
+    "region",
+    "climate_region",
+    "division",
+    "hdd65",
+    "cdd65",
+    "sqft_per_person",
+    "rooms_per_person",
+    "bed_to_room_ratio",
+    "lights_per_room",
+    "hdd_x_heat",
+    "cdd_x_region",
+    "survey_year"
+  ],
+  "target": "kwh",
+  "train_years": [
+    2005,
+    2009,
+    2015
+  ],
+  "test_years": [
+    2020
+  ]
+}

@@ -1,0 +1,155 @@
+[
+  {
+    "feature": "Rooms",
+    "clean_col": "rooms",
+    "2005": "TOTROOMS",
+    "2009": "TOTROOMS",
+    "2015": "TOTROOMS",
+    "2020": "TOTROOMS",
+    "description": "Total rooms excluding bathrooms"
+  },
+  {
+    "feature": "Bedrooms",
+    "clean_col": "bedrooms",
+    "2005": "BEDROOMS",
+    "2009": "BEDROOMS",
+    "2015": "BEDROOMS",
+    "2020": "BEDROOMS",
+    "description": "Number of bedrooms"
+  },
+  {
+    "feature": "Square Footage",
+    "clean_col": "sqft",
+    "2005": "TOTSQFT",
+    "2009": "TOTSQFT_EN",
+    "2015": "TOTSQFT_EN",
+    "2020": "TOTSQFT_EN",
+    "description": "Total cooled/heated interior square feet"
+  },
+  {
+    "feature": "Household Size",
+    "clean_col": "occupants",
+    "2005": "NHSLDMEM",
+    "2009": "NHSLDMEM",
+    "2015": "NHSLDMEM",
+    "2020": "NHSLDMEM",
+    "description": "Number of household members"
+  },
+  {
+    "feature": "Refrigerators",
+    "clean_col": "num_fridge",
+    "2005": "NUMFRIG",
+    "2009": "NUMFRIG",
+    "2015": "NUMFRIG",
+    "2020": "NUMFRIG",
+    "description": "Number of operating refrigerators"
+  },
+  {
+    "feature": "Washing Machine",
+    "clean_col": "has_washer",
+    "2005": "CWASHER",
+    "2009": "CWASHER",
+    "2015": "CWASHER",
+    "2020": "CWASHER",
+    "description": "Clothes washer presence (1=yes)"
+  },
+  {
+    "feature": "Clothes Dryer",
+    "clean_col": "has_dryer",
+    "2005": "DRYER",
+    "2009": "DRYER",
+    "2015": "DRYER",
+    "2020": "DRYER",
+    "description": "Clothes dryer presence (1=yes)"
+  },
+  {
+    "feature": "Separate Freezer",
+    "clean_col": "has_freezer",
+    "2005": "FREEZER",
+    "2009": "FREEZER",
+    "2015": "UPRTFRZR",
+    "2020": "FREEZER/UPRTFRZR",
+    "description": "Standalone upright/chest freezer"
+  },
+  {
+    "feature": "Air Conditioning",
+    "clean_col": "has_ac",
+    "2005": "AIRCOND",
+    "2009": "Derived/AC",
+    "2015": "Derived/AC",
+    "2020": "ACEQUIPM_PUB",
+    "description": "Air conditioning equipment installed"
+  },
+  {
+    "feature": "Heating Equipment",
+    "clean_col": "heat_equip",
+    "2005": "EQUIPM",
+    "2009": "EQUIPM",
+    "2015": "EQUIPM",
+    "2020": "EQUIPM",
+    "description": "Main space heating equipment type"
+  },
+  {
+    "feature": "Heating Fuel",
+    "clean_col": "heat_fuel",
+    "2005": "FUELHEAT",
+    "2009": "FUELHEAT",
+    "2015": "FUELHEAT",
+    "2020": "FUELHEAT",
+    "description": "Main space heating energy source (gas, elec, oil)"
+  },
+  {
+    "feature": "Housing Unit Type",
+    "clean_col": "housing_type",
+    "2005": "TYPEHUQ",
+    "2009": "TYPEHUQ",
+    "2015": "TYPEHUQ",
+    "2020": "TYPEHUQ",
+    "description": "Single-fam detached/attached, apt, mobile"
+  },
+  {
+    "feature": "Census Region",
+    "clean_col": "region",
+    "2005": "REGIONC",
+    "2009": "REGIONC",
+    "2015": "REGIONC",
+    "2020": "REGIONC",
+    "description": "Northeast, Midwest, South, West"
+  },
+  {
+    "feature": "Heating Degree Days",
+    "clean_col": "hdd65",
+    "2005": "HD65/HDD65",
+    "2009": "HDD65",
+    "2015": "HDD65",
+    "2020": "HDD65",
+    "description": "Annual heating degree days base 65F"
+  },
+  {
+    "feature": "Cooling Degree Days",
+    "clean_col": "cdd65",
+    "2005": "CD65/CDD65",
+    "2009": "CDD65",
+    "2015": "CDD65",
+    "2020": "CDD65",
+    "description": "Annual cooling degree days base 65F"
+  },
+  {
+    "feature": "Electricity (Target)",
+    "clean_col": "kwh",
+    "2005": "KWH",
+    "2009": "KWH",
+    "2015": "KWH",
+    "2020": "KWH",
+    "description": "Total annual electricity consumption (kWh)"
+  },
+  {
+    "feature": "Electricity Bill",
+    "clean_col": "dollar_el",
+    "2005": "DOLLAREL",
+    "2009": "DOLLAREL",
+    "2015": "DOLLAREL",
+    "2020": "DOLLAREL",
+    "description": "Annual cost for electricity in USD"
+  }
+]

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RECS Energy Intelligence Studio • EIA Microdata Machine Learning</title>
+    <meta name="description" content="Minimalist professional dashboard for residential electricity demand prediction and what-if simulation based on 4 cycles of EIA RECS survey microdata (2005-2020).">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <!-- Top Sticky Dashboard Navbar -->
+    <header class="dashboard-navbar">
+        <div class="nav-left">
+            <div class="brand-badge-logo" aria-hidden="true">
+                <i data-lucide="zap"></i>
+            </div>
+            <div class="brand-info">
+                <h1>RECS Energy Studio <span class="tag-version">v2.0</span></h1>
+                <p>EIA Residential Energy Microdata Intelligence</p>
+            </div>
+        </div>
+        <div class="nav-right">
+            <div class="status-pill">
+                <span class="status-indicator-dot"></span>
+                <span>Tuned XGBoost • Tariff: ₹8.00/kWh • INR (₹)</span>
+            </div>
+            <a href="https://github.com/tirth1356/RECS-Energy-Intelligence-Studio" target="_blank" rel="noopener noreferrer" class="btn-github">
+                <i data-lucide="github"></i>
+                <span>GitHub</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Dashboard Heading Area -->
+        <div class="dashboard-heading-area">
+            <div class="dashboard-title">
+                <h2>Residential Energy Forecast & Retrofit Studio</h2>
+                <p>Predict annual electricity consumption (kWh) and domestic utility bills (₹) across 39,833 harmonized household records.</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="dashboard-tabs" role="tablist">
+            <button class="tab-btn active" data-tab="tab-predictor" id="btn-tab-predictor" role="tab" aria-selected="true">
+                <i data-lucide="calculator"></i>
+                <span>Energy Predictor & Survey</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-whatif" id="btn-tab-whatif" role="tab" aria-selected="false">
+                <i data-lucide="sliders"></i>
+                <span>Live "What-If" Simulator</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-eval" id="btn-tab-eval" role="tab" aria-selected="false">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Model Evaluation & Benchmarks</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-methodology" id="btn-tab-methodology" role="tab" aria-selected="false">
+                <i data-lucide="file-spreadsheet"></i>
+                <span>Harmonization Crosswalk</span>
+            </button>
+        </nav>
+
+        <!-- TAB 1: PREDICTOR QUESTIONNAIRE & RESULTS -->
+        <main id="tab-predictor" class="tab-content active" role="tabpanel">
+            <div class="dashboard-grid">
+                <!-- Left: Questionnaire Form -->
+                <div class="dash-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="home"></i>
+                            <span>Dwelling & Load Questionnaire</span>
+                        </h3>
+                        <p class="card-subtitle">Input your dwelling architecture, occupants, and appliances to generate a forecast.</p>
+                    </div>
+
+                    <form id="energyForm">
+                        <!-- Section 1: Dwelling Specs -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-lucide="maximize-2"></i>
+                                <span>1. Home Size & Architecture</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="inp_sqft">Square Footage (sq ft)</label>
+                                    <input type="number" id="inp_sqft" value="1800" min="200" max="15000" step="50">
+                                    <small>Conditioned interior space</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_rooms">Total Rooms</label>
+                                    <input type="number" id="inp_rooms" value="6" min="1" max="20" step="1">
+                                    <small>Excl. bathrooms</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_bedrooms">Bedrooms</label>
+                                    <input type="number" id="inp_bedrooms" value="3" min="0" max="10" step="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_housing_type">Structure Type</label>
+                                    <select id="inp_housing_type">
+                                        <option value="0">Single-Family Detached</option>
+                                        <option value="1" selected>Single-Family Attached (Townhouse)</option>
+                                        <option value="2">Apartment in 2–4 Unit Building</option>
+                                        <option value="3">Apartment in 5+ Unit Complex</option>
+                                        <option value="4">Mobile / Manufactured Home</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Occupancy -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-lucide="users"></i>
+                                <span>2. Household Occupancy</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="inp_occupants">Number of Occupants</label>
+                                    <input type="number" id="inp_occupants" value="2" min="1" max="12" step="1">
+                                    <small>Permanent residents</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Appliances -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-lucide="plug"></i>
+                                <span>3. Major Electrical Appliances</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="inp_fridge">Full-Size Refrigerators</label>
+                                    <input type="number" id="inp_fridge" value="1" min="0" max="5" step="1">
+                                </div>
+                                <div class="form-group toggle-group">
+                                    <span class="toggle-label">Clothes Washer</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="inp_washer" checked>
+                                        <span class="slider-switch"></span>
+                                    </label>
+                                </div>
+                                <div class="form-group toggle-group">
+                                    <span class="toggle-label">Clothes Dryer</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="inp_dryer" checked>
+                                        <span class="slider-switch"></span>
+                                    </label>
+                                </div>
+                                <div class="form-group toggle-group">
+                                    <span class="toggle-label">Separate Freezer</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="inp_freezer">
+                                        <span class="slider-switch"></span>
+                                    </label>
+                                </div>
+                                <div class="form-group toggle-group">
+                                    <span class="toggle-label">Air Conditioning</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="inp_ac" checked>
+                                        <span class="slider-switch"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 4: Lighting -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-lucide="lightbulb"></i>
+                                <span>4. Lighting Fixtures & Bulbs</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="inp_lights">Total Light Fixture Bulbs</label>
+                                    <input type="number" id="inp_lights" value="20" min="2" max="100" step="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_led">Energy-Efficient LED Bulbs</label>
+                                    <input type="number" id="inp_led" value="12" min="0" max="100" step="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_cfl">CFL Bulbs</label>
+                                    <input type="number" id="inp_cfl" value="4" min="0" max="50" step="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 5: Heating, Cooling & Geography -->
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-lucide="snowflake"></i>
+                                <span>5. Heating, Cooling & Climate</span>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="inp_heat_fuel">Space Heating Fuel</label>
+                                    <select id="inp_heat_fuel">
+                                        <option value="0">Natural Gas</option>
+                                        <option value="1" selected>Electricity (Heat Pump / Resistance)</option>
+                                        <option value="2">Fuel Oil / Kerosene</option>
+                                        <option value="3">Propane (LPG)</option>
+                                        <option value="4">Wood / Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_heat_equip">Heating Equipment</label>
+                                    <select id="inp_heat_equip">
+                                        <option value="6" selected>Central Warm-Air Furnace</option>
+                                        <option value="4">Electric Heat Pump (Central)</option>
+                                        <option value="2">Steam / Hot Water Radiators</option>
+                                        <option value="5">Built-in Electric Baseboards</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_ac_type">AC Equipment</label>
+                                    <select id="inp_ac_type">
+                                        <option value="5" selected>Central Air Conditioning</option>
+                                        <option value="1">Individual Window / Wall Units</option>
+                                        <option value="3">Ductless Mini-Split Heat Pump</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_region">Census Climate Region</label>
+                                    <select id="inp_region">
+                                        <option value="0">Northeast</option>
+                                        <option value="1">Midwest</option>
+                                        <option value="2" selected>South</option>
+                                        <option value="3">West</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_hdd">Heating Degree Days (HDD65)</label>
+                                    <input type="number" id="inp_hdd" value="4200" min="0" max="12000" step="100">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inp_cdd">Cooling Degree Days (CDD65)</label>
+                                    <input type="number" id="inp_cdd" value="1400" min="0" max="6000" step="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" id="calcBtn" class="btn-primary">
+                            <i data-lucide="sparkles"></i>
+                            <span>Calculate Energy Forecast & Bill (INR)</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right: Prediction Results View -->
+                <div class="results-stack">
+                    <!-- Hero Metrics -->
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i data-lucide="gauge"></i>
+                                <span>Model Forecast Summary</span>
+                            </h3>
+                            <p class="card-subtitle">Predicted electricity demand & estimated costs in Indian Rupees (₹).</p>
+                        </div>
+
+                        <div class="metric-hero-grid">
+                            <div class="metric-hero-card highlight">
+                                <span class="metric-label">Predicted Electricity</span>
+                                <span class="metric-value" id="res_kwh">--</span>
+                                <span class="metric-sub" id="res_diff_badge">--</span>
+                            </div>
+                            <div class="metric-hero-card">
+                                <span class="metric-label">Annual Bill (₹)</span>
+                                <span class="metric-value" id="res_annual_cost">--</span>
+                                <span class="metric-sub">@ ₹8.00 / kWh</span>
+                            </div>
+                            <div class="metric-hero-card">
+                                <span class="metric-label">Monthly Bill (₹)</span>
+                                <span class="metric-value" id="res_monthly_cost">--</span>
+                                <span class="metric-sub">Monthly average</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Visualizer -->
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i data-lucide="bar-chart-2"></i>
+                                <span>Benchmark Comparison</span>
+                            </h3>
+                            <p class="card-subtitle">Your forecasted home compared to peer group benchmarks in consumption and cost (₹).</p>
+                        </div>
+
+                        <div class="chart-box">
+                            <!-- User's home -->
+                            <div class="benchmark-bar-row">
+                                <div class="bar-meta">
+                                    <span>Your Forecasted Home</span>
+                                    <span id="val_user">--</span>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill user" id="bar_user" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- National average -->
+                            <div class="benchmark-bar-row">
+                                <div class="bar-meta">
+                                    <span style="color: var(--text-dim);">Cohort Average</span>
+                                    <span id="val_nat" style="color: var(--text-dim);">--</span>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill national" id="bar_nat" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Regional average -->
+                            <div class="benchmark-bar-row">
+                                <div class="bar-meta">
+                                    <span style="color: var(--text-muted);">Regional Climate Average</span>
+                                    <span id="val_reg" style="color: var(--text-muted);">--</span>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill regional" id="bar_reg" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- High efficiency home -->
+                            <div class="benchmark-bar-row">
+                                <div class="bar-meta">
+                                    <span style="color: var(--text-secondary);">High-Efficiency Benchmark (-28%)</span>
+                                    <span id="val_eff" style="color: var(--text-secondary);">--</span>
+                                </div>
+                                <div class="bar-track">
+                                    <div class="bar-fill efficient" id="bar_eff" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explainability: SHAP Feature Drivers -->
+                    <div class="dash-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i data-lucide="target"></i>
+                                <span>Key SHAP Feature Drivers</span>
+                            </h3>
+                            <p class="card-subtitle">Primary dwelling and behavioral factors driving this prediction.</p>
+                        </div>
+                        <div class="shap-card-list" id="shap_drivers_list">
+                            <!-- Populated dynamically by app.js -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- TAB 2: LIVE WHAT-IF SIMULATOR -->
+        <section id="tab-whatif" class="tab-content" role="tabpanel">
+            <div class="sim-grid">
+                <!-- Sliders Panel -->
+                <div class="dash-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="sliders-horizontal"></i>
+                            <span>"What-If" Retrofit & Appliance Simulator</span>
+                        </h3>
+                        <p class="card-subtitle">Adjust appliance count and efficiency parameters to observe live financial impact in ₹ (INR).</p>
+                    </div>
+
+                    <!-- Slider 1: Refrigerators -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-title">Refrigerators in Operation</span>
+                            <span class="slider-val-badge" id="sim_fridge_val">1</span>
+                        </div>
+                        <input type="range" class="custom-range" id="sim_fridge" min="0" max="4" step="1" value="1">
+                    </div>
+
+                    <!-- Slider 2: LED Bulb Adoption % -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-title">LED Lighting Adoption Ratio</span>
+                            <span class="slider-val-badge" id="sim_led_pct_val">60%</span>
+                        </div>
+                        <input type="range" class="custom-range" id="sim_led_pct" min="0" max="100" step="5" value="60">
+                        <small style="color: var(--text-dim); margin-top: 4px; display: block;">Upgrade old fixtures to 100% efficient solid-state LEDs</small>
+                    </div>
+
+                    <!-- Slider 3: Occupants -->
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span class="slider-title">Household Occupancy Size</span>
+                            <span class="slider-val-badge" id="sim_occupants_val">2</span>
+                        </div>
+                        <input type="range" class="custom-range" id="sim_occupants" min="1" max="8" step="1" value="2">
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="form-grid" style="margin-top: 20px;">
+                        <div class="toggle-group">
+                            <span class="toggle-label">Standalone Freezer</span>
+                            <label class="switch">
+                                <input type="checkbox" id="sim_freezer">
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-group">
+                            <span class="toggle-label">Clothes Dryer</span>
+                            <label class="switch">
+                                <input type="checkbox" id="sim_dryer" checked>
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-group">
+                            <span class="toggle-label">Air Conditioning Active</span>
+                            <label class="switch">
+                                <input type="checkbox" id="sim_ac" checked>
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Results Panel -->
+                <div class="dash-card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i data-lucide="activity"></i>
+                            <span>Live Simulation Feedback</span>
+                        </h3>
+                        <p class="card-subtitle">Immediate model response to behavioral and appliance changes.</p>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div class="metric-hero-grid" style="grid-template-columns: 1fr 1fr;">
+                            <div class="metric-hero-card highlight">
+                                <span class="metric-label">Simulated Consumption</span>
+                                <span class="metric-value" id="sim_kwh_val">--</span>
+                                <span class="metric-sub">Annual kWh</span>
+                            </div>
+                            <div class="metric-hero-card">
+                                <span class="metric-label">Simulated Bill (₹)</span>
+                                <span class="metric-value" id="sim_cost_val">--</span>
+                                <span class="metric-sub">Annual INR</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Delta Badge -->
+                        <div class="delta-badge" id="sim_delta_badge">
+                            Adjust a slider to see real-time delta in ₹
+                        </div>
+
+                        <!-- Energy Saving Tips -->
+                        <div class="callout-box">
+                            <div class="callout-title">
+                                <i data-lucide="leaf"></i>
+                                <span>Efficiency Tips & Financial Return</span>
+                            </div>
+                            <p style="font-size: 0.82rem; margin-top: 4px; line-height: 1.6;">
+                                • Retiring a secondary refrigerator saves on average <strong>800–1,200 kWh/yr (approx ₹6,400–₹9,600 / year)</strong>.<br>
+                                • Converting all lighting to 100% LED drops continuous baseload draw.<br>
+                                • Homes with electric resistance heating in cold climates show up to 3× electrical consumption compared to gas/hydronic systems.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MODEL EVALUATION & BENCHMARKS -->
+        <section id="tab-eval" class="tab-content" role="tabpanel">
+            <div class="dash-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i data-lucide="line-chart"></i>
+                        <span>Model Performance & Time-Aware Validation</span>
+                    </h3>
+                    <p class="card-subtitle">
+                        Trained on <strong>21,678</strong> households (2005, 2009, 2015 cycles) and tested on 
+                        <strong>18,155 households from RECS 2020</strong>.
+                    </p>
+                </div>
+
+                <!-- Metrics Table -->
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Model Architecture</th>
+                                <th>MAE (kWh)</th>
+                                <th>RMSE (kWh)</th>
+                                <th>R² Score</th>
+                                <th>MAPE (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics_table_body">
+                            <!-- Populated by app.js -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Plots Grid -->
+                <div class="plots-grid">
+                    <div class="plot-card">
+                        <h4>XGBoost Top Feature Importances</h4>
+                        <p style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px;">Gain-based split importance</p>
+                        <img src="/api/artifacts/feature_importance.png" alt="XGBoost Feature Importance Plot" loading="lazy">
+                    </div>
+                    <div class="plot-card">
+                        <h4>SHAP Summary (Impact Distribution)</h4>
+                        <p style="font-size: 0.74rem; color: var(--text-dim); margin-top: 4px;">Feature value vs. impact on predicted electricity</p>
+                        <img src="/api/artifacts/shap_summary.png" alt="SHAP Summary Plot" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: HARMONIZATION & METHODOLOGY -->
+        <section id="tab-methodology" class="tab-content" role="tabpanel">
+            <div class="dash-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i data-lucide="file-text"></i>
+                        <span>Data Harmonization Crosswalk (2005 – 2020)</span>
+                    </h3>
+                    <p class="card-subtitle">
+                        Standardized cross-cycle mapping for all harmonized features across RECS survey years.
+                    </p>
+                </div>
+
+                <!-- Limitation Callout -->
+                <div class="callout-box">
+                    <div class="callout-title">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Methodological Note & Survey Limitation</span>
+                    </div>
+                    <p>
+                        <strong>Non-Panel Cross-Sectional Structure:</strong> The EIA RECS surveys independent samples every 4–6 years; it is <em>not</em> a longitudinal panel tracking identical households over time. Consequently, <code>survey_year</code> captures structural shifts (e.g. federal efficiency standards, LED adoption) rather than continuous time series trends. Holding out the full 2020 cycle guarantees zero data leakage across survey waves.
+                    </p>
+                </div>
+
+                <!-- Missing Values Note -->
+                <div class="callout-box">
+                    <div class="callout-title">
+                        <i data-lucide="info"></i>
+                        <span>Preprocessing & Missing Codes Handling</span>
+                    </div>
+                    <p>
+                        • <strong>RECS Missing Codes:</strong> Special response codes <code>-2</code> (Not Applicable), <code>-8</code> (Don't Know), <code>-9</code> (Refused), and <code>-99</code> were mapped to <code>NaN</code> and handled with feature-specific median imputations.<br>
+                        • <strong>Weight Adjustments:</strong> Survey replicate weights (e.g., <code>BRRWT1–96</code>, <code>NWEIGHT1–60</code>) were dropped from feature matrices to avoid overfitting on survey sampling design artifacts.<br>
+                        • <strong>Outlier Trimming:</strong> Electricity consumption targets were bounded between 1st and 99th percentiles to eliminate erroneous extremes.
+                    </p>
+                </div>
+
+                <!-- Search Box -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 18px;">
+                    <input type="text" id="mapping_search" class="search-box" placeholder="Search variables, features...">
+                    <small style="color: var(--text-dim);">Live filtering across core harmonized features</small>
+                </div>
+
+                <!-- Harmonization Crosswalk Table -->
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Standard Feature</th>
+                                <th>Clean Column</th>
+                                <th>2005 RECS</th>
+                                <th>2009 RECS</th>
+                                <th>2015 RECS</th>
+                                <th>2020 RECS</th>
+                                <th>Feature Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="harmonization_table_body">
+                            <!-- Populated dynamically by app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>RECS Energy Intelligence Studio • EIA Microdata Machine Learning • Minimalist Dark Dashboard</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

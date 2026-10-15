@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Large Raw Survey Data (RECS microdata files >100MB)
+RECS05alldata.csv
+recs2009_public.csv
+recs2015_public_v4.csv
+recs2020_public_v7.csv
+
+# Large intermediate combined datasets (can be regenerated with pipeline.py)
+model_artifacts/combined_raw.csv
+model_artifacts/combined_clean.csv
+
+# IDE / Operating System
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,18 @@
+feature,clean_col,2005,2009,2015,2020,description
+Rooms,rooms,TOTROOMS,TOTROOMS,TOTROOMS,TOTROOMS,Total rooms excluding bathrooms
+Bedrooms,bedrooms,BEDROOMS,BEDROOMS,BEDROOMS,BEDROOMS,Number of bedrooms
+Square Footage,sqft,TOTSQFT,TOTSQFT_EN,TOTSQFT_EN,TOTSQFT_EN,Total cooled/heated interior square feet
+Household Size,occupants,NHSLDMEM,NHSLDMEM,NHSLDMEM,NHSLDMEM,Number of household members
+Refrigerators,num_fridge,NUMFRIG,NUMFRIG,NUMFRIG,NUMFRIG,Number of operating refrigerators
+Washing Machine,has_washer,CWASHER,CWASHER,CWASHER,CWASHER,Clothes washer presence (1=yes)
+Clothes Dryer,has_dryer,DRYER,DRYER,DRYER,DRYER,Clothes dryer presence (1=yes)
+Separate Freezer,has_freezer,FREEZER,FREEZER,UPRTFRZR,FREEZER/UPRTFRZR,Standalone upright/chest freezer
+Air Conditioning,has_ac,AIRCOND,Derived/AC,Derived/AC,ACEQUIPM_PUB,Air conditioning equipment installed
+Heating Equipment,heat_equip,EQUIPM,EQUIPM,EQUIPM,EQUIPM,Main space heating equipment type
+Heating Fuel,heat_fuel,FUELHEAT,FUELHEAT,FUELHEAT,FUELHEAT,"Main space heating energy source (gas, elec, oil)"
+Housing Unit Type,housing_type,TYPEHUQ,TYPEHUQ,TYPEHUQ,TYPEHUQ,"Single-fam detached/attached, apt, mobile"
+Census Region,region,REGIONC,REGIONC,REGIONC,REGIONC,"Northeast, Midwest, South, West"
+Heating Degree Days,hdd65,HD65/HDD65,HDD65,HDD65,HDD65,Annual heating degree days base 65F
+Cooling Degree Days,cdd65,CD65/CDD65,CDD65,CDD65,CDD65,Annual cooling degree days base 65F
+Electricity (Target),kwh,KWH,KWH,KWH,KWH,Total annual electricity consumption (kWh)
+Electricity Bill,dollar_el,DOLLAREL,DOLLAREL,DOLLAREL,DOLLAREL,Annual cost for electricity in USD
