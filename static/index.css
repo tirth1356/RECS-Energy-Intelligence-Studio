@@ -362,7 +362,7 @@ header.dashboard-navbar {
   color: var(--text-muted);
 }
 
-.form-group input, 
+.form-group input,
 .form-group select {
   background: var(--bg-input);
   border: 1px solid var(--border-subtle);
@@ -375,11 +375,22 @@ header.dashboard-navbar {
   transition: var(--transition);
 }
 
-.form-group input:focus, 
+.form-group input:focus,
 .form-group select:focus {
   background: var(--bg-input-focus);
   border-color: var(--accent-white);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+/* Remove spinner arrows from number inputs, keep plain textbox */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: none !important;
 }
 
 .form-group small {

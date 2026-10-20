@@ -46,6 +46,8 @@ META = {}
 BENCHMARKS = {}
 HARMONIZATION = []
 METRICS_DATA = []
+CATEGORY_MAPPINGS = {}
+LABEL_ENCODERS = {}
 
 def load_system():
     global MODEL_BUNDLE, MODEL, FEAT_NAMES, EXPLAINER, SHAP_IMP, FEAT_STATS, META, BENCHMARKS, HARMONIZATION, METRICS_DATA
@@ -81,6 +83,15 @@ def load_system():
             with open(meta_path) as f:
                 META = json.load(f)
 
+        cat_map_path = os.path.join(ART, 'category_mappings.json')
+        if os.path.exists(cat_map_path):
+            with open(cat_map_path) as f:
+                CATEGORY_MAPPINGS = json.load(f)
+
+        # Extract fitted label encoders from the model bundle
+        if MODEL_BUNDLE and 'label_encoders' in MODEL_BUNDLE:
+            LABEL_ENCODERS = MODEL_BUNDLE['label_encoders']
+
         bench_path = os.path.join(ART, 'benchmarks.json')
         if os.path.exists(bench_path):
             with open(bench_path) as f:
@@ -101,7 +112,9 @@ def load_system():
 
 load_system()
 
-# Electricity tariff average in India (₹8.00 per kWh standard domestic rate)
+# ⚠️ DISPLAY ASSUMPTION: ₹8.00/kWh is an illustrative Indian domestic tariff
+# used only for cost display (kWh → ₹ conversion). It is NOT part of the ML
+# model, which predicts raw kWh from US EIA RECS microdata.
 KWH_RATE = 8.00
 CURRENCY_SYMBOL = "₹"
 
@@ -135,35 +148,34 @@ class HouseholdInput(BaseModel):
     rooms: float = Field(6.0, ge=1, le=25, description="Total rooms excluding baths")
     bedrooms: float = Field(3.0, ge=0, le=15, description="Number of bedrooms")
     sqft: float = Field(1800.0, ge=100, le=20000, description="Square footage")
-    housing_type: int = Field(1, ge=0, le=4, description="0=Single Fam Detached, 1=Single Fam Attached, 2=Apt 2-4, 3=Apt 5+, 4=Mobile Home")
-    
+    housing_type: str = Field("Single-Family Attached", description="Dwelling structure type")
+
     # Occupants
     occupants: float = Field(2.0, ge=1, le=15, description="Number of household members")
-    
+
     # Appliances
     num_fridge: float = Field(1.0, ge=0, le=6, description="Number of full-size refrigerators")
     has_washer: float = Field(1.0, ge=0, le=1, description="Clothes washer (1=Yes, 0=No)")
     has_dryer: float = Field(1.0, ge=0, le=1, description="Clothes dryer (1=Yes, 0=No)")
     has_freezer: float = Field(0.0, ge=0, le=1, description="Separate freezer (1=Yes, 0=No)")
     has_ac: float = Field(1.0, ge=0, le=1, description="Air conditioning (1=Yes, 0=No)")
-    
+
     # Lighting
     num_lights: float = Field(20.0, ge=1, le=100, description="Total interior light bulbs")
     num_led: float = Field(12.0, ge=0, le=100, description="Number of LED bulbs")
     num_cfl: float = Field(4.0, ge=0, le=100, description="Number of CFL bulbs")
-    
+
     # Heating & Cooling
-    heat_fuel: int = Field(1, ge=0, le=10, description="0=Gas, 1=Electricity, 2=Propane, 3=Fuel Oil, etc.")
-    heat_equip: int = Field(6, ge=0, le=15, description="Heating equipment code")
-    ac_type: int = Field(5, ge=0, le=6, description="AC equipment code")
-    
+    heat_fuel: str = Field("Electricity", description="Space heating fuel type")
+    heat_equip: str = Field("Central Warm-Air Furnace", description="Heating equipment type")
+    ac_type: str = Field("Central Air Conditioning", description="AC equipment type")
+
     # Climate & Geography
-    region: int = Field(2, ge=0, le=3, description="0=Northeast, 1=Midwest, 2=South, 3=West")
-    climate_region: int = Field(3, ge=0, le=13, description="Climate zone code")
-    division: int = Field(4, ge=0, le=9, description="Census division code")
+    region: str = Field("South", description="Census climate region")
+    climate_region: str = Field("Mixed-Humid", description="Climate zone code")
+    division: str = Field("South Atlantic", description="Census division code")
     hdd65: float = Field(4200.0, ge=0, le=15000, description="Heating degree days")
     cdd65: float = Field(1400.0, ge=0, le=10000, description="Cooling degree days")
-    survey_year: float = Field(2020.0, description="Baseline survey cycle")
 
 # ── 3. Feature Engineering Helper ────────────────────────────
 def build_feature_vector(d: dict) -> np.ndarray:
@@ -178,11 +190,22 @@ def build_feature_vector(d: dict) -> np.ndarray:
     d['hdd_x_heat'] = d['hdd65'] * d.get('heat_equip', 0.0)
     d['cdd_x_region'] = d['cdd65'] * d.get('region', 0.0)
 
+    # Encode categorical strings using label encoders fitted on training data
+    for c in CATEGORICAL_COLS:
+        if c in d and LABEL_ENCODERS.get(c):
+            le = LABEL_ENCODERS[c]
+            val = str(d[c])
+            if val in le.classes_:
+                d[c] = int(le.transform([val])[0])
+            else:
+                # Unseen category → map to -1 (will be imputed to median below)
+                d[c] = -1
+
     # Align exactly with model feature list
     row = []
     for f in FEAT_NAMES:
         val = d.get(f)
-        if val is None or np.isnan(val):
+        if val is None or (isinstance(val, float) and np.isnan(val)):
             # Fallback to training median if missing
             median_val = FEAT_STATS.get('median', {}).get(f, 0.0) if FEAT_STATS else 0.0
             row.append(float(median_val))
@@ -234,15 +257,18 @@ def get_artifact(filename: str):
 @app.post("/api/predict")
 def predict_energy(inp: HouseholdInput):
     if MODEL is None:
-        raise HTTPException(503, "Model pipeline not loaded. Ensure pipeline.py executed successfully.")
+        raise HTTPException(503, "Model pipeline not loaded. Run `python pipeline.py` first to train and export the model.")
 
-    d = inp.model_dump()
-    X = build_feature_vector(d)
-    
-    raw_pred = float(MODEL.predict(X)[0])
-    kwh_pred = max(round(raw_pred, 1), 200.0)
-    annual_cost = round(kwh_pred * KWH_RATE, 2)
-    monthly_cost = round(annual_cost / 12.0, 2)
+    try:
+        d = inp.model_dump()
+        X = build_feature_vector(d)
+
+        raw_pred = float(MODEL.predict(X)[0])
+        kwh_pred = max(round(raw_pred, 1), 200.0)
+        annual_cost = round(kwh_pred * KWH_RATE, 2)
+        monthly_cost = round(annual_cost / 12.0, 2)
+    except Exception as e:
+        raise HTTPException(500, f"Prediction failed: {str(e)}")
 
     # National & regional benchmarks
     nat_avg_kwh = BENCHMARKS.get('overall', {}).get('mean', 10827.2)

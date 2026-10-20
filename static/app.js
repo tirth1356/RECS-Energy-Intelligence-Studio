@@ -71,9 +71,9 @@ function getFormPayload() {
         rooms: parseFloat(document.getElementById('inp_rooms').value) || 6,
         bedrooms: parseFloat(document.getElementById('inp_bedrooms').value) || 3,
         sqft: parseFloat(document.getElementById('inp_sqft').value) || 1800,
-        housing_type: parseInt(document.getElementById('inp_housing_type').value) || 1,
+        housing_type: document.getElementById('inp_housing_type').value || 'Single-Family Attached (Townhouse)',
         occupants: parseFloat(document.getElementById('inp_occupants').value) || 2,
-        
+
         num_fridge: parseFloat(document.getElementById('inp_fridge').value) || 1,
         has_washer: document.getElementById('inp_washer').checked ? 1 : 0,
         has_dryer: document.getElementById('inp_dryer').checked ? 1 : 0,
@@ -84,16 +84,15 @@ function getFormPayload() {
         num_led: parseFloat(document.getElementById('inp_led').value) || 10,
         num_cfl: parseFloat(document.getElementById('inp_cfl').value) || 4,
 
-        heat_fuel: parseInt(document.getElementById('inp_heat_fuel').value) || 1,
-        heat_equip: parseInt(document.getElementById('inp_heat_equip').value) || 6,
-        ac_type: parseInt(document.getElementById('inp_ac_type').value) || 5,
+        heat_fuel: document.getElementById('inp_heat_fuel').value || 'Electricity',
+        heat_equip: document.getElementById('inp_heat_equip').value || 'Central Warm-Air Furnace',
+        ac_type: document.getElementById('inp_ac_type').value || 'Central Air Conditioning',
 
-        region: parseInt(document.getElementById('inp_region').value) || 2,
-        climate_region: 3,
-        division: 4,
+        region: document.getElementById('inp_region').value || 'South',
+        climate_region: 'Mixed-Humid',
+        division: 'South Atlantic',
         hdd65: parseFloat(document.getElementById('inp_hdd').value) || 4200,
-        cdd65: parseFloat(document.getElementById('inp_cdd').value) || 1400,
-        survey_year: 2020
+        cdd65: parseFloat(document.getElementById('inp_cdd').value) || 1400
     };
 }
 
@@ -271,7 +270,7 @@ function syncWithSimulator(payload) {
     if (washTog) washTog.checked = payload.has_washer === 1;
 
     const heatTog = document.getElementById('sim_heat_electric');
-    if (heatTog) heatTog.checked = payload.heat_fuel === 1;
+    if (heatTog) heatTog.checked = payload.heat_fuel === 'Electricity';
 
     triggerWhatIf();
 }
@@ -296,7 +295,7 @@ async function triggerWhatIf() {
     const simDryer = document.getElementById('sim_dryer')?.checked ? 1 : 0;
     const simAc = document.getElementById('sim_ac')?.checked ? 1 : 0;
     const simWasher = document.getElementById('sim_washer')?.checked ? 1 : 0;
-    const simHeatElectric = document.getElementById('sim_heat_electric')?.checked ? 1 : 0;
+    const simHeatElectric = document.getElementById('sim_heat_electric')?.checked;
 
     const totalLights = basePayload.num_lights || 20;
     const simLed = Math.round((simLedPct / 100) * totalLights);
@@ -321,7 +320,7 @@ async function triggerWhatIf() {
         has_washer: simWasher,
         has_ac: simAc,
         cdd65: adjustedCdd,
-        heat_fuel: simHeatElectric
+        heat_fuel: simHeatElectric ? 'Electricity' : basePayload.heat_fuel
     };
 
     try {

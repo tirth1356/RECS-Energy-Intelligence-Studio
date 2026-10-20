@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 warnings.filterwarnings('ignore')
 
-BASE = r'c:\Users\TirthPatel\Documents\innovative\ml'
+BASE = os.path.dirname(os.path.abspath(__file__))
 OUT  = os.path.join(BASE, 'model_artifacts')
 os.makedirs(OUT, exist_ok=True)
 
@@ -166,8 +166,9 @@ CATEGORICAL_COLS = ['heat_equip', 'heat_fuel', 'housing_type',
                     'region', 'climate_region', 'ac_type', 'division']
 
 label_encoders = {}
+category_mappings = {}
 
-def preprocess(df):
+def preprocess(df, fit_encoders=True, encoders=None):
     df = df.dropna(subset=['kwh']).copy()
     df = df[df['kwh'] > 0]
 
@@ -188,13 +189,22 @@ def preprocess(df):
     lo, hi = df['kwh'].quantile([0.01, 0.99])
     df = df[(df['kwh'] >= lo) & (df['kwh'] <= hi)]
 
-    # Encode categoricals
+    # Encode categoricals — fit on train only to avoid leakage
     for c in CATEGORICAL_COLS:
         if c in df.columns:
             df[c] = df[c].astype(str).replace('nan', 'unknown')
-            le = LabelEncoder()
-            df[c] = le.fit_transform(df[c])
-            label_encoders[c] = le
+            if fit_encoders:
+                le = LabelEncoder()
+                df[c] = le.fit_transform(df[c])
+                label_encoders[c] = le
+                category_mappings[c] = list(le.classes_)
+            else:
+                le = encoders[c]
+                def safe_transform(val):
+                    if val in le.classes_:
+                        return int(le.transform([val])[0])
+                    return -1  # unseen category
+                df[c] = df[c].apply(safe_transform)
 
     # Feature engineering
     df['sqft_per_person']   = df['sqft'] / df['occupants'].clip(lower=1)
@@ -246,7 +256,6 @@ FEATURES = [
     'hdd65', 'cdd65',
     'sqft_per_person', 'rooms_per_person', 'bed_to_room_ratio',
     'lights_per_room', 'hdd_x_heat', 'cdd_x_region',
-    'survey_year',
 ]
 TARGET = 'kwh'
 
@@ -384,13 +393,17 @@ if __name__ == '__main__':
     raw = build_combined()
     raw.to_csv(os.path.join(OUT, 'combined_raw.csv'), index=False)
 
-    print("\n[2] Preprocessing ...")
-    df = preprocess(raw)
+    print("\n[2] Preprocessing (numeric cleaning only) ...")
+    df = preprocess(raw, fit_encoders=False)
     df.to_csv(os.path.join(OUT, 'combined_clean.csv'), index=False)
 
     print("\n[3] Year-aware split (test = 2020) ...")
     train_df, test_df = year_split(df, test_years=(2020,))
     print(f"  Train: {len(train_df):,}  |  Test: {len(test_df):,}")
+
+    # Fit label encoders on TRAIN only, then transform both train & test
+    train_df = preprocess(train_df, fit_encoders=True)
+    test_df  = preprocess(test_df,  fit_encoders=False, encoders=label_encoders)
 
     X_train, y_train, feat_names = get_feature_matrix(train_df)
     X_test,  y_test,  _          = get_feature_matrix(test_df)
@@ -402,6 +415,10 @@ if __name__ == '__main__':
     stats = X_train.describe().T[['mean', '50%', 'min', 'max']]
     stats.columns = ['mean', 'median', 'min', 'max']
     stats.to_json(os.path.join(OUT, 'feature_stats.json'))
+
+    # Save category mappings so the API can encode inputs consistently
+    with open(os.path.join(OUT, 'category_mappings.json'), 'w') as f:
+        json.dump(category_mappings, f, indent=2)
 
     meta = {'features': feat_names, 'target': TARGET,
             'train_years': [2005, 2009, 2015], 'test_years': [2020]}
