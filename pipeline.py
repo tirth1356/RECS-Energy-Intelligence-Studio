@@ -2,6 +2,9 @@
 RECS Energy Consumption Prediction Pipeline
 Covers: Preprocessing -> Feature Engineering -> Modeling -> Export
 """
+#pip install -r requirements.txt
+#python app.py
+# recalculation python pipeline.py
 
 import os
 import warnings
@@ -142,7 +145,6 @@ def load_year(year):
     col_map = COL_MAP[year]
     rename = {k: v for k, v in col_map.items() if k in df.columns}
     df = df[list(rename.keys())].rename(columns=rename)
-    # Replace RECS missing codes with NaN
     df = df.replace(RECS_MISSING, np.nan)
     df['survey_year'] = year
     # De-duplicate standard col names (e.g. has_freezer mapped twice)
