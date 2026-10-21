@@ -82,9 +82,9 @@ python pipeline.py
 
 ### 3. Launch the Web Application
 ```bash
-python -m uvicorn app:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app:app --reload --host 127.0.0.1 --port 8002
 ```
-Open **`http://127.0.0.1:8000`** in your browser.
+Open **`http://127.0.0.1:8002`** in your browser.
 
 ---
 

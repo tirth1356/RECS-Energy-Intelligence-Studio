@@ -27,8 +27,7 @@
     "bed_to_room_ratio",
     "lights_per_room",
     "hdd_x_heat",
-    "cdd_x_region",
-    "survey_year"
+    "cdd_x_region"
   ],
   "target": "kwh",
   "train_years": [

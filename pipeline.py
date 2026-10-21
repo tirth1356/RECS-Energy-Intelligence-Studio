@@ -5,6 +5,7 @@ Covers: Preprocessing -> Feature Engineering -> Modeling -> Export
 #pip install -r requirements.txt
 #python app.py
 # recalculation python pipeline.py
+#python -m uvicorn app:app --reload --host 127.0.0.1 --port 8002
 
 import os
 import warnings
@@ -394,7 +395,7 @@ if __name__ == '__main__':
     raw.to_csv(os.path.join(OUT, 'combined_raw.csv'), index=False)
 
     print("\n[2] Preprocessing (numeric cleaning only) ...")
-    df = preprocess(raw, fit_encoders=False)
+    df = preprocess(raw, fit_encoders=True)
     df.to_csv(os.path.join(OUT, 'combined_clean.csv'), index=False)
 
     print("\n[3] Year-aware split (test = 2020) ...")

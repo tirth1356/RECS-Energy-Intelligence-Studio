@@ -48,9 +48,11 @@ HARMONIZATION = []
 METRICS_DATA = []
 CATEGORY_MAPPINGS = {}
 LABEL_ENCODERS = {}
+CATEGORICAL_COLS = ['heat_equip', 'heat_fuel', 'housing_type',
+                    'region', 'climate_region', 'ac_type', 'division']
 
 def load_system():
-    global MODEL_BUNDLE, MODEL, FEAT_NAMES, EXPLAINER, SHAP_IMP, FEAT_STATS, META, BENCHMARKS, HARMONIZATION, METRICS_DATA
+    global MODEL_BUNDLE, MODEL, FEAT_NAMES, EXPLAINER, SHAP_IMP, FEAT_STATS, META, BENCHMARKS, HARMONIZATION, METRICS_DATA, LABEL_ENCODERS
     try:
         model_path = os.path.join(ART, 'best_model.pkl')
         if os.path.exists(model_path):
@@ -187,10 +189,9 @@ def build_feature_vector(d: dict) -> np.ndarray:
     d['lights_per_room'] = d['num_lights'] / max(d['rooms'], 1.0)
     nl = d['num_lights'] if d['num_lights'] > 0 else 1.0
     d['led_ratio'] = d['num_led'] / nl
-    d['hdd_x_heat'] = d['hdd65'] * d.get('heat_equip', 0.0)
-    d['cdd_x_region'] = d['cdd65'] * d.get('region', 0.0)
 
-    # Encode categorical strings using label encoders fitted on training data
+    # Encode categorical strings using label encoders fitted on training data.
+    # Must run before the heat/climate interactions below, which need numeric codes.
     for c in CATEGORICAL_COLS:
         if c in d and LABEL_ENCODERS.get(c):
             le = LABEL_ENCODERS[c]
@@ -200,6 +201,9 @@ def build_feature_vector(d: dict) -> np.ndarray:
             else:
                 # Unseen category → map to -1 (will be imputed to median below)
                 d[c] = -1
+
+    d['hdd_x_heat'] = d['hdd65'] * d.get('heat_equip', 0.0)
+    d['cdd_x_region'] = d['cdd65'] * d.get('region', 0.0)
 
     # Align exactly with model feature list
     row = []
@@ -274,10 +278,17 @@ def predict_energy(inp: HouseholdInput):
     nat_avg_kwh = BENCHMARKS.get('overall', {}).get('mean', 10827.2)
     nat_median_kwh = BENCHMARKS.get('overall', {}).get('median', 9473.0)
     
-    reg_key = str(int(inp.region))
+    # Benchmarks are keyed by label-encoded region / housing codes (strings "0".."N"),
+    # but the frontend sends category names (e.g. "South"). Encode to match.
+    def _enc_key(field, encoder):
+        le = LABEL_ENCODERS.get(encoder)
+        val = str(d.get(field, ""))
+        return str(int(le.transform([val])[0])) if le and val in le.classes_ else None
+
+    reg_key = _enc_key('region', 'region')
     reg_avg_kwh = BENCHMARKS.get('by_region', {}).get(reg_key, {}).get('mean', nat_avg_kwh)
-    
-    house_key = str(int(inp.housing_type))
+
+    house_key = _enc_key('housing_type', 'housing_type')
     house_avg_kwh = BENCHMARKS.get('by_housing', {}).get(house_key, {}).get('mean', nat_avg_kwh)
 
     # Top SHAP drivers formatted for user
@@ -336,4 +347,4 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=8002, reload=True)
